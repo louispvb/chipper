@@ -1,53 +1,69 @@
 (ns chip.opcodes
-  (:use [chip.state]))
+  (:use clojure.test
+        chip.state))
 
-(defn opbitX
-  "Grabs part of the opcode corresponding to X, 0x1X34"
-  [state]
-  (bit-shift-right (bit-and (:op state) 0x0F00) 8))
+(with-test
+  (defn opbitX
+    "Grabs part of the opcode corresponding to X, 0x1X34"
+    [state]
+    (bit-shift-right (bit-and (:op state) 0x0F00) 8))
+  (is (= 1 (opbitX (test-state)))))
 
-(defn opbitY
-  "Grabs part of the opcode corresponding to Y, 0x12Y4"
-  [state]
-  (bit-shift-right (bit-and (:op state) 0x00F0) 4))
+(with-test
+  (defn opbitY
+    "Grabs part of the opcode corresponding to Y, 0x12Y4"
+    [state]
+    (bit-shift-right (bit-and (:op state) 0x00F0) 4))
+  (is (= 2 (opbitY (test-state)))))
 
-(defn opbitN
-  "Grabs the last byte of the opcode"
-  [state]
-  (bit-and (:op state) 0x000F))
+(with-test
+  (defn opbitN
+    "Grabs the last byte of the opcode"
+    [state]
+    (bit-and (:op state) 0x000F))
+  (is (= 3 (opbitN (test-state)))))
 
-(defn opbitNN
-  "Grabs the last two bytes of the opcode"
-  [state]
-  (bit-and (:op state) 0x00FF))
+(with-test
+  (defn opbitNN
+    "Grabs the last two bytes of the opcode"
+    [state]
+    (bit-and (:op state) 0x00FF))
+  (is (= 0x23 (opbitNN (test-state)))))
 
-(defn opbitNNN
-  "Grabs the last three bytes of the opcode"
-  [state]
-  (bit-and (:op state) 0x0FFF))
+(with-test
+  (defn opbitNNN
+    "Grabs the last three bytes of the opcode"
+    [state]
+    (bit-and (:op state) 0x0FFF))
+  (is (= 0x123 (opbitNNN (test-state)))))
 
-(defn opregVX
-  "Retrieves the register value correspoding to opbitX"
-  [state]
-  (get-in state [:vx (opbitX state)]))
+(with-test
+  (defn opregVX
+    "Retrieves the register value correspoding to opbitX"
+    [state]
+    (get-in state [:vx (opbitX state)]))
+  (is (= 2 (opregVX (test-state)))))
 
-(defn opregVY
-  "Retrieves the register value correspoding to opbitY"
-  [state]
-  (get-in state [:vx (opbitY state)]))
+(with-test
+  (defn opregVY
+    "Retrieves the register value correspoding to opbitY"
+    [state]
+    (get-in state [:vx (opbitY state)]))
+  (is (= 3 (opregVY (test-state)))))
 
-(defn skip
-  "Increments program counter by two (two bytes)"
-  [state]
-  (assoc state :pc (+ (:pc state) 2)))
+(with-test
+  (defn skip
+    "Increments program counter by two (two bytes)"
+    [state]
+    (assoc state :pc (+ (:pc state) 2)))
+  (is (= 2 (:pc (skip (test-state))))))
 
 (defn next-opcode
   "Cycle to next opcode from program memory"
   [{:keys [pc memory] :as state}]
-    (skip (assoc state :op
-            (bit-or
-              (bit-shift-left (get memory pc) 8)
-              (get memory (inc pc))))))
+  (skip (assoc state :op (bit-or
+                           (bit-shift-left (get memory pc) 8)
+                           (get memory (inc pc))))))
 
 (defn setm [m k f v] (assoc m k (f (get m v))))
 
@@ -60,11 +76,11 @@
   [state]
   (cond
     (= (opbitNN state) 0xE0) ; Clear screen
-      (assoc state :frame-buff (blank-frame-buff))
+    (assoc state :frame-buff (blank-frame-buff))
     (= (opbitNN state) 0xEE) ; Return
-      (-> state
-        (setm :pc peek :stack)
-        (setm :stack pop :stack))))
+    (-> state
+      (setm :pc peek :stack )
+      (setm :stack pop :stack ))))
 
 (defn op1NNN
   "jmp to 0x0NNN"
@@ -75,7 +91,7 @@
   "call 0x0NNN"
   [state]
   (-> state
-    (assoc :stack (conj (get state :pc) (get state :stack)))
+    (assoc :stack (conj (get state :pc ) (get state :stack )))
     op1NNN))
 
 (defn op3XNN
@@ -242,16 +258,16 @@
         y (opregVY state)
         height (opbitN state)
         buff-flag
-          (reduce
-            (fn [[buff flag] i]
-              (update-in
-                (vec-replace
-                  buff
-                  (+ x (* buff-width (+ y i)))
-                  (seq-bits (get memory (+ ip i))))
-                [1] #(or flag %)))
-            [frame-buff false]
-            (range height))]
+        (reduce
+          (fn [[buff flag] i]
+            (update-in
+              (vec-replace
+                buff
+                (+ x (* buff-width (+ y i)))
+                (seq-bits (get memory (+ ip i))))
+              [1] #(or flag %)))
+          [frame-buff false]
+          (range height))]
     (-> (if (buff-flag 1) (setV state 0xF 1) state)
       (assoc :frame-buff (buff-flag 0)))))
 
@@ -293,24 +309,24 @@
 
 
 #_(def op8-map
-  (zipmap (range 0x10)
-    [op8XY0, op8XY1, op8XY2, op8XY3, op8XY4, op8XY5, op8XY6, op8XY7,
-     opID,   opID,   opID,   opID,   opID,   opID,   op8XYE, opID]))
+     (zipmap (range 0x10)
+       [op8XY0, op8XY1, op8XY2, op8XY3, op8XY4, op8XY5, op8XY6, op8XY7,
+        opID,   opID,   opID,   opID,   opID,   opID,   op8XYE, opID]))
 
 #_(defn op8XYM
-  "Lookup and execute 8XYM opcode"
-  [state]
-  (let [opcode-fun (get op8-map (opbitN state))]
-    (opcode-fun state)))
+     "Lookup and execute 8XYM opcode"
+     [state]
+     (let [opcode-fun (get op8-map (opbitN state))]
+       (opcode-fun state)))
 
 #_(def op-map
-  (zipmap (range 0x10)
-    [op00MM, op1NNN, op2NNN, op3XNN, op4XNN, op5XY0, op6XNN, op7XNN,
-     op8XYM, op9XY0, opANNN, opBNNN, opCXNN, opDXYN, opEXMM, opFXMM]))
+     (zipmap (range 0x10)
+       [op00MM, op1NNN, op2NNN, op3XNN, op4XNN, op5XY0, op6XNN, op7XNN,
+        op8XYM, op9XY0, opANNN, opBNNN, opCXNN, opDXYN, opEXMM, opFXMM]))
 
 #_(defn execute-cycle
-  [state]
-  (let [newst (next-opcode state)
-        op (:op newst)
-        opcode-fun (get op-map (bit-shift-right (bit-and op 0xF000) 12))]
-    (recur (opcode-fun state))))
+     [state]
+     (let [newst (next-opcode state)
+           op (:op newst)
+           opcode-fun (get op-map (bit-shift-right (bit-and op 0xF000) 12))]
+       (recur (opcode-fun state))))

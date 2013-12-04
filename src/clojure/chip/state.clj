@@ -20,23 +20,24 @@
       (print (if (= 0 x) \. \#)))
     (println)))
 
-(def font-set (vector-of :int
-                0xF0, 0x90, 0x90, 0x90, 0xF0, ; 0
-                0x20, 0x60, 0x20, 0x20, 0x70, ; 1
-                0xF0, 0x10, 0xF0, 0x80, 0xF0, ; 2
-                0xF0, 0x10, 0xF0, 0x10, 0xF0, ; 3
-                0x90, 0x90, 0xF0, 0x10, 0x10, ; 4
-                0xF0, 0x80, 0xF0, 0x10, 0xF0, ; 5
-                0xF0, 0x80, 0xF0, 0x90, 0xF0, ; 6
-                0xF0, 0x10, 0x20, 0x40, 0x40, ; 7
-                0xF0, 0x90, 0xF0, 0x90, 0xF0, ; 8
-                0xF0, 0x90, 0xF0, 0x10, 0xF0, ; 9
-                0xF0, 0x90, 0xF0, 0x90, 0x90, ; A
-                0xE0, 0x90, 0xE0, 0x90, 0xE0, ; B
-                0xF0, 0x80, 0x80, 0x80, 0xF0, ; C
-                0xE0, 0x90, 0x90, 0x90, 0xE0, ; D
-                0xF0, 0x80, 0xF0, 0x80, 0xF0, ; E
-                0xF0, 0x80, 0xF0, 0x80, 0x80)); F
+(def font-set
+  (vector-of :int
+    0xF0, 0x90, 0x90, 0x90, 0xF0, ; 0
+    0x20, 0x60, 0x20, 0x20, 0x70, ; 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, ; 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, ; 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, ; 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, ; 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, ; 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, ; 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, ; 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, ; 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, ; A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, ; B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, ; C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, ; D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, ; E
+    0xF0, 0x80, 0xF0, 0x80, 0x80)); F
 
 (defn merge-vec
   [index update-vec data-vec]
@@ -65,26 +66,42 @@
 (def buff-width 64)
 (def buff-height 32)
 
-(defrecord ChipState [^int ip, ; 16bit Instruction Pointer
-                      ^int pc, ; 16bit Program Counter
-                      ^int op, ; 16bit Currently executed opcode
-                      ^int dt, ; 8bit Delay Timer
-                      ^int st, ; 8bit Sound Timer
-                      vx, ; 8bit Registers
-                      key-vec, ; Key state vector (pressed or unpressed)
-                      stack, ; Stack vector
-                      ^boolean draw-flag ; Flag used to indicate monitor refresh
-                      frame-buff, ; Frame buffer
-                      memory,
-                      ])
+(defrecord ChipState
+  [^int ip, ; 16bit Instruction Pointer
+  ^int pc, ; 16bit Program Counter
+  ^int op, ; 16bit Currently executed opcode
+  ^int dt, ; 8bit Delay Timer
+  ^int st, ; 8bit Sound Timer
+  vx, ; 8bit Registers
+  key-vec, ; Key state vector (pressed or unpressed)
+  stack, ; Stack vector
+  ^boolean draw-flag ; Flag used to indicate monitor refresh
+  frame-buff, ; Frame buffer
+  memory])
 
 
-(def init-state (ChipState. 0 0 0 0 0
-                  dvx
-                  dkey-vec
-                  []
-                  false
-                  dframe-buff
-                  dmemory
-                  ))
+(def init-state
+  "Initial state of the emulator."
+  (ChipState. 0 0 0 0 0
+    dvx
+    dkey-vec
+    []
+    false
+    dframe-buff
+    dmemory))
 
+(defn test-state
+  "Non sensical state for running unit tests."
+  []
+  (ChipState. 0 0 0x0123 0 0
+    (vector-of :int
+       1 2 3 4
+       5 6 7 8
+       9 10 11 12
+       13 14 15 16)
+    dkey-vec
+    []
+    false
+    dframe-buff
+    (merge-vec (count font-set) dmemory
+      (vector-of :int 1 2 3))))

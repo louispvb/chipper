@@ -1,8 +1,7 @@
 (ns chip.core
-  (:use [seesaw.core])
+  (:use seesaw.core)
   (:import (org.pushingpixels.substance.api SubstanceLookAndFeel)
-           (org.pushingpixels.substance.api.skin GraphiteSkin)
-           (gmail.louispvb.chip Opcodes)))
+           (org.pushingpixels.substance.api.skin GraphiteSkin)))
 
 (native!)
 
