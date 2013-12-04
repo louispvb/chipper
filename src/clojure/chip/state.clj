@@ -59,8 +59,8 @@
 
 (def dmemory (merge-vec 0 (vector-type :int 0x1000 0) font-set))
 (def dvx (vector-type :int 0x10 0))
-(defn blank-frame-buff [] (vector-type :int (* 64 32) 0))
-(def dframe-buff (blank-frame-buff))
+(def blank-frame-buff (vector-type :int (* 64 32) 0))
+(def dframe-buff blank-frame-buff)
 (def dkey-vec (vector-type :boolean 0x10 false))
 
 (def buff-width 64)
@@ -85,7 +85,7 @@
   (ChipState. 0 0 0 0 0
     dvx
     dkey-vec
-    []
+    (vector-of :int)
     false
     dframe-buff
     dmemory))
@@ -93,15 +93,15 @@
 (defn test-state
   "Non sensical state for running unit tests."
   []
-  (ChipState. 0 0 0x0123 0 0
+  (ChipState. 0 0x1111 0x0123 0 0
     (vector-of :int
        1 2 3 4
        5 6 7 8
        9 10 11 12
        13 14 15 16)
     dkey-vec
-    []
+    (vector-of :int 0x2222)
     false
-    dframe-buff
+    (merge-vec 0 dframe-buff (vector-of :int 0 0 1 1))
     (merge-vec (count font-set) dmemory
       (vector-of :int 1 2 3))))

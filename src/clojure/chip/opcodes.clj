@@ -56,7 +56,7 @@
     "Increments program counter by two (two bytes)"
     [state]
     (assoc state :pc (+ (:pc state) 2)))
-  (is (= 2 (:pc (skip (test-state))))))
+  (is (= 0x1113 (:pc (skip (test-state))))))
 
 (defn next-opcode
   "Cycle to next opcode from program memory"
@@ -65,22 +65,33 @@
                            (bit-shift-left (get memory pc) 8)
                            (get memory (inc pc))))))
 
-(defn setm [m k f v] (assoc m k (f (get m v))))
+(defn update-to-from
+  "Updates a map value with f acted on the value of another key."
+  [m k f v]
+  (assoc m k (f (get m v))))
 
 (defn opID
   [state]
   state)
 
+(with-test
 (defn op00MM
   "Either clear screen or return"
   [state]
   (cond
     (= (opbitNN state) 0xE0) ; Clear screen
-    (assoc state :frame-buff (blank-frame-buff))
+      (assoc state :frame-buff blank-frame-buff)
     (= (opbitNN state) 0xEE) ; Return
-    (-> state
-      (setm :pc peek :stack )
-      (setm :stack pop :stack ))))
+      (-> state
+        ; place top of stack on pc
+        (update-to-from :pc peek :stack )
+        ; set stack to the pop
+        (update-to-from :stack pop :stack ))))
+  (let [cleared (op00MM (assoc (test-state) :op 0x00E0))
+        returned (op00MM (assoc (test-state) :op 0x00EE))]
+    (is (= 0 (apply + (:frame-buff cleared))))
+    (is (= 0x2222 (:pc returned)))
+    (is (empty? (:stack returned)))))
 
 (defn op1NNN
   "jmp to 0x0NNN"
@@ -89,9 +100,9 @@
 
 (defn op2NNN
   "call 0x0NNN"
-  [state]
+  [{:keys [pc stack] :as state}]
   (-> state
-    (assoc :stack (conj (get state :pc ) (get state :stack )))
+    (assoc :stack (conj pc stack))
     op1NNN))
 
 (defn op3XNN
